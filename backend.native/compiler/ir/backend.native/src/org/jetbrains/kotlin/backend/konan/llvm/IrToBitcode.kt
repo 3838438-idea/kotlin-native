@@ -1849,12 +1849,9 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
         val args = evaluateExplicitArgs(value)
 
         updateBuilderDebugLocation(value)
-        when {
-            value is IrDelegatingConstructorCall   ->
-                return delegatingConstructorCall(value.symbol.owner, args)
-
-            else ->
-                return evaluateFunctionCall(value as IrCall, args, resultLifetime(value))
+        return when (value) {
+            is IrDelegatingConstructorCall -> delegatingConstructorCall(value.symbol.owner, args)
+            else -> evaluateFunctionCall(value as IrCall, args, resultLifetime(value))
         }
     }
 
@@ -2101,7 +2098,7 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
                                                args + getContinuation()
                                            else args
         return when {
-            function.isCoolIntrinsic -> intrinsicGenerator.evaluateCall(callee, args, functionGenerationContext)
+            function.isCoolIntrinsic -> intrinsicGenerator.evaluateCall(callee, args, functionGenerationContext, currentCodeContext)
             function.isIntrinsic -> evaluateIntrinsicCall(callee, argsWithContinuationIfNeeded)
             function.origin == IrDeclarationOrigin.IR_BUILTINS_STUB -> evaluateOperatorCall(callee, argsWithContinuationIfNeeded)
             function is ConstructorDescriptor -> evaluateConstructorCall(callee, argsWithContinuationIfNeeded)

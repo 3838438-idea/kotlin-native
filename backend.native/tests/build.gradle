@@ -1044,7 +1044,12 @@ task initializers_correctOrder2(type: RunKonanTest) {
 // TODO: enable optimizations
 task arithmetic_basic(type: RunKonanTest) {
     source = "codegen/arithmetic/basic.kt"
-    goldValue = "OK"
+    goldValue = "OK\n"
+}
+
+task arithmetic_github1856(type: RunKonanTest) {
+    source = "codegen/arithmetic/github1856.kt"
+    goldValue = "[-1, -137, 2000107383, 2000107319]\n"
 }
 
 task bridges_test0(type: RunKonanTest) {

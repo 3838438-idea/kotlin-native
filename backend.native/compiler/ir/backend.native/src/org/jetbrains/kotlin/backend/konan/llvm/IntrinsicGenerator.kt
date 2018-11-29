@@ -1,6 +1,5 @@
 package org.jetbrains.kotlin.backend.konan.llvm
 
-import kotlinx.cinterop.toCValues
 import llvm.*
 import org.jetbrains.kotlin.backend.konan.descriptors.coolInstrinsicAnnotation
 import org.jetbrains.kotlin.backend.konan.reportCompilationError
@@ -54,30 +53,30 @@ internal class IntrinsicGenerator(val codegen: CodeGenerator) {
     }
 
     // TODO: set debug info
-    fun evaluateCall(callee: IrCall, args: List<LLVMValueRef>, functionGenerationContext: FunctionGenerationContext): LLVMValueRef =
+    fun evaluateCall(callee: IrCall, args: List<LLVMValueRef>, functionGenerationContext: FunctionGenerationContext, currentCodeContext: CodeContext): LLVMValueRef =
         when (getIntrinsicKind(callee.symbol.owner)) {
-            IntrinsicKind.PLUS ->           ::emitPlus
-            IntrinsicKind.MINUS ->          ::emitMinus
-            IntrinsicKind.TIMES ->          ::emitTimes
-            IntrinsicKind.DIV ->            ::emitDiv
-            IntrinsicKind.REM ->            ::emitRem
-            IntrinsicKind.INC ->            ::emitInc
-            IntrinsicKind.DEC ->            ::emitDec
-            IntrinsicKind.UNARY_PLUS ->     ::emitUnaryPlus
-            IntrinsicKind.UNARY_MINUS ->    ::emitUnaryMinus
-            IntrinsicKind.SHL ->            ::emitShl
-            IntrinsicKind.SHR ->            ::emitShr
-            IntrinsicKind.USHR ->           ::emitUshr
-            IntrinsicKind.AND ->            ::emitAnd
-            IntrinsicKind.OR ->             ::emitOr
-            IntrinsicKind.XOR ->            ::emitXor
-            IntrinsicKind.INV ->            ::emitInv
-            IntrinsicKind.COMPARE_TO ->     ::emitCompareTo
-            IntrinsicKind.PRIMITIVE_CAST -> ::emitPrimitiveCast
-            IntrinsicKind.NOT ->            ::emitNot
-            IntrinsicKind.FROM_BITS ->      ::emitReinterpret
-            IntrinsicKind.TO_BITS ->        ::emitReinterpret
-        } (callee, args, functionGenerationContext)!!
+            IntrinsicKind.PLUS ->           emitPlus(callee, args, functionGenerationContext)
+            IntrinsicKind.MINUS ->          emitMinus(callee, args, functionGenerationContext)
+            IntrinsicKind.TIMES ->          emitTimes(callee, args, functionGenerationContext)
+            IntrinsicKind.DIV ->            emitDiv(callee, args, functionGenerationContext, currentCodeContext)
+            IntrinsicKind.REM ->            emitRem(callee, args, functionGenerationContext)
+            IntrinsicKind.INC ->            emitInc(callee, args, functionGenerationContext)
+            IntrinsicKind.DEC ->            emitDec(callee, args, functionGenerationContext)
+            IntrinsicKind.UNARY_PLUS ->     emitUnaryPlus(callee, args, functionGenerationContext)
+            IntrinsicKind.UNARY_MINUS ->    emitUnaryMinus(callee, args, functionGenerationContext)
+            IntrinsicKind.SHL ->            emitShl(callee, args, functionGenerationContext)
+            IntrinsicKind.SHR ->            emitShr(callee, args, functionGenerationContext)
+            IntrinsicKind.USHR ->           emitUshr(callee, args, functionGenerationContext)
+            IntrinsicKind.AND ->            emitAnd(callee, args, functionGenerationContext)
+            IntrinsicKind.OR ->             emitOr(callee, args, functionGenerationContext)
+            IntrinsicKind.XOR ->            emitXor(callee, args, functionGenerationContext)
+            IntrinsicKind.INV ->            emitInv(callee, args, functionGenerationContext)
+            IntrinsicKind.COMPARE_TO ->     emitCompareTo(callee, args, functionGenerationContext)
+            IntrinsicKind.PRIMITIVE_CAST -> emitPrimitiveCast(callee, args, functionGenerationContext)
+            IntrinsicKind.NOT ->            emitNot(callee, args, functionGenerationContext)
+            IntrinsicKind.FROM_BITS ->      emitReinterpret(callee, args, functionGenerationContext)
+            IntrinsicKind.TO_BITS ->        emitReinterpret(callee, args, functionGenerationContext)
+        }!!
 
     private fun emitReinterpret(callee: IrCall, args: List<LLVMValueRef>, functionGenerationContext: FunctionGenerationContext) =
         with(functionGenerationContext) {
@@ -188,7 +187,7 @@ internal class IntrinsicGenerator(val codegen: CodeGenerator) {
             }
         }
 
-    private fun emitDiv(callee: IrCall, args: List<LLVMValueRef>, functionGenerationContext: FunctionGenerationContext) =
+    private fun emitDiv(callee: IrCall, args: List<LLVMValueRef>, functionGenerationContext: FunctionGenerationContext, currentCodeContext: CodeContext) =
         with (functionGenerationContext) {
             val divider = args[1]
             if (divider.type.isFloatingPoint()) {
@@ -202,8 +201,7 @@ internal class IntrinsicGenerator(val codegen: CodeGenerator) {
 
             positionAtEnd(invalidArgBb)
             val throwArthExc = codegen.llvmFunction(context.ir.symbols.throwArithmeticException.owner)
-            // TODO: FIXME
-//            call(throwArthExc, listOf(codegen.kNullObjHeaderPtrPtr), verbatim = true) // TODO: is it correct?
+            call(throwArthExc, listOf(codegen.kNullObjHeaderPtrPtr), verbatim = true, exceptionHandler = currentCodeContext.exceptionHandler)
             unreachable()
 
             // No need for exit basic block.

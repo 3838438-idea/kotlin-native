@@ -14,5 +14,9 @@ fun primitiveComparisons() {
 
     assertFalse(selfCmp1(Int.MAX_VALUE))
     assertFalse(selfCmp2(Int.MIN_VALUE))
+
+    assertFailsWith(ArithmeticException::class, { 5 / 0 })
+    assertEquals(Double.NaN, 0.0 / 0.0)
+
     println("OK")
 }
